@@ -1,0 +1,31 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/docker-login@v1
+        with:
+          login-server: 'index.docker.io'
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - uses: actions/checkout@v2
+      - uses: bazelbuild/setup-bazelisk@v1
+      - name: Mount bazel cache
+        uses: actions/cache@v2
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+      - run: bazel --bazelrc=tools/ci.bazelrc run //manifests:stable  > stable.yaml
+      - run: bazel --bazelrc=tools/ci.bazelrc run //manifests:cluster > cluster.yaml
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            stable.yaml
+            cluster.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

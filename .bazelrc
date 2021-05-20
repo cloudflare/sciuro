@@ -1,0 +1,7 @@
+run   --workspace_status_command="./tools/print-workspace-status"
+
+build --define repo=changeme --define namespace=node-remediation
+test  --define repo=changeme --define namespace=node-remediation
+run   --define repo=changeme --define namespace=node-remediation
+
+try-import %workspace%/user.bazelrc

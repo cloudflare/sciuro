@@ -1,6 +1,9 @@
 startup --batch
 build --noshow_progress --noshow_loading_progress
 build --verbose_failures
-test --test_output=errors
-test --features=race
+test  --test_output=errors
+test  --features=race
 
+build --define repo=docker.io/cloudflare
+test  --define repo=docker.io/cloudflare
+run   --define repo=docker.io/cloudflare

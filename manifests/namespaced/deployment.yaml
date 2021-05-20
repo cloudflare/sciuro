@@ -20,7 +20,7 @@ spec:
         - name: sa-gcr-image-pull
       containers:
         - name: sciuro
-          image: sciuro:dev
+          image: sciuro:{STABLE_GIT_TAG}
           imagePullPolicy: IfNotPresent
           resources:
             limits:

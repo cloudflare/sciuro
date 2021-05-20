@@ -6,7 +6,7 @@ package(default_visibility = ["//manifests:__pkg__"])
 k8s_deploy(
     name = "sciuro-deployment",
     images = {
-        "sciuro:dev": "//cmd/sciuro:image",
+        "sciuro:{STABLE_GIT_TAG}": "//cmd/sciuro:image",
     },
     kind = "deployment",
     template = ":deployment.yaml",

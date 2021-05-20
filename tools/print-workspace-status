@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+echo STABLE_GIT_TAG $(git describe --always --match "v[0-9].*" --dirty)
