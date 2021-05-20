@@ -1,0 +1,55 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+
+go_library(
+    name = "sciuro",
+    srcs = ["main.go"],
+    importpath = "github.com/cloudflare/sciuro/cmd/sciuro",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/alert",
+        "//internal/node",
+        "@com_github_caarlos0_env//:env",
+        "@com_github_prometheus_alertmanager//cli",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_sigs_controller_runtime//pkg/client/config",
+        "@io_k8s_sigs_controller_runtime//pkg/controller",
+        "@io_k8s_sigs_controller_runtime//pkg/handler",
+        "@io_k8s_sigs_controller_runtime//pkg/log",
+        "@io_k8s_sigs_controller_runtime//pkg/log/zap",
+        "@io_k8s_sigs_controller_runtime//pkg/manager",
+        "@io_k8s_sigs_controller_runtime//pkg/manager/signals",
+        "@io_k8s_sigs_controller_runtime//pkg/metrics",
+        "@io_k8s_sigs_controller_runtime//pkg/source",
+    ],
+)
+
+go_image(
+    name = "image",
+    embed = [":sciuro"],
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "sciuro_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/cloudflare/sciuro/cmd/sciuro",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/alert",
+        "//internal/node",
+        "@com_github_caarlos0_env//:env",
+        "@com_github_prometheus_alertmanager//cli",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_sigs_controller_runtime//pkg/client/config",
+        "@io_k8s_sigs_controller_runtime//pkg/controller",
+        "@io_k8s_sigs_controller_runtime//pkg/handler",
+        "@io_k8s_sigs_controller_runtime//pkg/log",
+        "@io_k8s_sigs_controller_runtime//pkg/log/zap",
+        "@io_k8s_sigs_controller_runtime//pkg/manager",
+        "@io_k8s_sigs_controller_runtime//pkg/manager/signals",
+        "@io_k8s_sigs_controller_runtime//pkg/metrics",
+        "@io_k8s_sigs_controller_runtime//pkg/source",
+    ],
+)

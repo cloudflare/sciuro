@@ -1,0 +1,4 @@
+cmd/sciuro/sciuro
+vendor
+build
+/bazel*

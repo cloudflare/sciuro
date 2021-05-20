@@ -1,0 +1,37 @@
+load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
+load("@k8s_deploy//:defaults.bzl", "k8s_deploy")
+
+package(default_visibility = ["//manifests:__pkg__"])
+
+k8s_deploy(
+    name = "sciuro-deployment",
+    images = {
+        "sciuro:dev": "//cmd/sciuro:image",
+    },
+    kind = "deployment",
+    template = ":deployment.yaml",
+)
+
+k8s_deploy(
+    name = "sciuro-serviceaccount",
+    kind = "serviceaccount",
+    template = ":serviceaccount.yaml",
+)
+
+k8s_deploy(
+    name = "sciuro-role",
+    kind = "role",
+    template = ":role.yaml",
+)
+
+k8s_deploy(
+    name = "sciuro-rolebinding",
+    kind = "rolebinding",
+    template = ":rolebinding.yaml",
+)
+
+k8s_deploy(
+    name = "sciuro-leader",
+    kind = "configmap",
+    template = ":sciuro-leader.yaml",
+)

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sciuro
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sciuro
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+      labels:
+        app: sciuro
+    spec:
+      serviceAccountName: sciuro
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: sa-gcr-image-pull
+      containers:
+        - name: sciuro
+          image: sciuro:dev
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 250m
+              memory: 250Mi
+          ports:
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: GOMAXPROCS
+              value: "2"
+          envFrom:
+            - configMapRef:
+                name: sciuro
+                optional: false

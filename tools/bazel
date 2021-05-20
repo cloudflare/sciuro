@@ -1,0 +1,75 @@
+#!/bin/bash
+
+set -o errexit
+
+# Bazelisk will execute `%workspace%/tools/bazel` like Bazel. If we detect we're
+# being executed by Bazelisk, short-circuit the rest of this script and execute
+# the already downloaded version.
+if [ -n "${BAZELISK_SKIP_WRAPPER}" ] && [ -n "${BAZEL_REAL}" ]; then
+  exec "${BAZEL_REAL}" "$@"
+fi
+
+PLATFORM="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m)"
+
+REMOTE_RELEASE="https://github.com/bazelbuild/bazelisk/releases/download"
+BAZELISK_VERSION="v1.1.0"
+
+if [ "${ARCH}" != "x86_64" ]; then
+    (>&2 echo "bazelisk is not hermetically sealed for this architecture, falling back to bazel-real")
+    exec bazel-real "$@"
+fi
+
+if [ "${ARCH}" == "x86_64" ]; then
+  ARCH="amd64"
+fi
+
+EXE_EXT=""
+case "${PLATFORM}" in
+  msys*|mingw*|cygwin*)
+    PLATFORM="windows"
+    EXE_EXT=".exe"
+    BAZELISK_SHA256="c3461282354db5a35b3c5279ff1d386c102f5d8eac0824a9ae0f6a467a632bef"
+    ;;
+  darwin)
+    BAZELISK_SHA256="88add23f1e0963d6347aadb2a4570e9924b58b33437518e8b9cfb94aa7cca31b"
+    ;;
+  linux)
+    BAZELISK_SHA256="d20be9dfb311c596efd1579d30c0fdab0d5ba62ec76b316ada3a8e69f4194bbe"
+    ;;
+  *)
+    (>&2 echo "bazelisk is not hermetically sealed for this platform, falling back to bazel-real")
+    exac bazel-real "$@"
+    ;;
+esac
+
+XDG_CACHE="${XDG_CACHE_HOME:=$HOME/.cache}"
+BAZELISK_BIN_CACHE="${XDG_CACHE}/bazel"
+BAZELISK_BIN_DIR="${BAZELISK_BIN_CACHE}/${BAZELISK_VERSION}"
+
+BAZELISK_BIN="bazelisk-${PLATFORM}-${ARCH}${EXE_EXT}"
+
+function download_bazelisk() {
+  local tempfile
+  local url
+
+  tempfile=$(mktemp -t bazeldl-XXXXXXXXXX)
+  url="${REMOTE_RELEASE}/${BAZELISK_VERSION}/${BAZELISK_BIN}"
+  (>&2 printf "Downloading bazelisk %s from %s.\n" "${BAZELISK_VERSION}" "${url}")
+
+  (>&2 curl --location "${url}" --output "${tempfile}")
+  echo "${BAZELISK_SHA256}  ${tempfile}" | shasum --algorithm 256 --check --status -
+
+  chmod +x "${tempfile}"
+  mv "${tempfile}" "${BAZELISK_BIN_DIR}/${BAZELISK_BIN}"
+}
+
+if [ ! -x "${BAZELISK_BIN_DIR}/${BAZELISK_BIN}" ]; then
+  (>&2 mkdir -p "${BAZELISK_BIN_DIR}")
+  download_bazelisk
+fi
+
+# Execute the Bazelisk we downloaded. `BAZELISK_SKIP_WRAPPER`
+# informs Bazelisk that it shouldn't re-execute this script.
+export BAZELISK_SKIP_WRAPPER="true"
+exec "${BAZELISK_BIN_DIR}/${BAZELISK_BIN}" "$@"

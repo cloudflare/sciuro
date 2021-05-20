@@ -1,0 +1,20 @@
+load("@io_bazel_rules_k8s//k8s:objects.bzl", "k8s_objects")
+
+k8s_objects(
+    name = "stable",
+    objects = [
+        "//manifests/namespaced:sciuro-serviceaccount",
+        "//manifests/namespaced:sciuro-deployment",
+        "//manifests/namespaced:sciuro-leader",
+        "//manifests/namespaced:sciuro-role",
+        "//manifests/namespaced:sciuro-rolebinding",
+    ],
+)
+
+k8s_objects(
+    name = "cluster",
+    objects = [
+        "//manifests/non-namespaced:sciuro-clusterrole",
+        "//manifests/non-namespaced:sciuro-clusterrolebinding",
+    ],
+)

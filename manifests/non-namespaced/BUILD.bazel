@@ -1,0 +1,19 @@
+load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
+load("@k8s_deploy//:defaults.bzl", "k8s_deploy")
+
+package(default_visibility = ["//manifests:__pkg__"])
+
+k8s_deploy(
+    name = "sciuro-clusterrole",
+    kind = "clusterrole",
+    template = ":clusterrole.yaml",
+)
+
+k8s_deploy(
+    name = "sciuro-clusterrolebinding",
+    kind = "clusterrolebinding",
+    substitutions = {
+        "kube-system": "$(namespace)",
+    },
+    template = ":clusterrolebinding.yaml",
+)
