@@ -16,8 +16,6 @@ spec:
     spec:
       serviceAccountName: sciuro
       restartPolicy: Always
-      imagePullSecrets:
-        - name: sa-gcr-image-pull
       containers:
         - name: sciuro
           image: sciuro:{STABLE_GIT_TAG}
