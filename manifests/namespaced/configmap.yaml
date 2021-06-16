@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sciuro
+data:
+  SCIURO_ALERT_RECEIVER: CHANGEME
+  SCIURO_ALERTMANAGER_URL: https://CHANGEME.example.com
+  SCIURO_NODE_FILTERS: instance=~({{.FullName}}|{{.ShortName}})

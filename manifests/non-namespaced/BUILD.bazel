@@ -4,6 +4,12 @@ load("@k8s_deploy//:defaults.bzl", "k8s_deploy")
 package(default_visibility = ["//manifests:__pkg__"])
 
 k8s_deploy(
+    name = "sciuro-namespace",
+    kind = "namespace",
+    template = ":namespace.yaml",
+)
+
+k8s_deploy(
     name = "sciuro-clusterrole",
     kind = "clusterrole",
     template = ":clusterrole.yaml",

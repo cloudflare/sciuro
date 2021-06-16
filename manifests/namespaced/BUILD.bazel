@@ -4,6 +4,12 @@ load("@k8s_deploy//:defaults.bzl", "k8s_deploy")
 package(default_visibility = ["//manifests:__pkg__"])
 
 k8s_deploy(
+    name = "sciuro-configmap",
+    kind = "configmap",
+    template = ":configmap.yaml",
+)
+
+k8s_deploy(
     name = "sciuro-deployment",
     images = {
         "sciuro:{STABLE_GIT_TAG}": "//cmd/sciuro:image",
