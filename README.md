@@ -6,7 +6,7 @@
 
 # Introduction
 
-Sciuro is a bridge between alertmanager and Kubernetes to sync alerts as Node
+Sciuro is a bridge between Alertmanager and Kubernetes to sync alerts as Node
 Conditions. It is designed to work in tandem with other controllers that
 observe Node Conditions such as [draino](https://github.com/planetlabs/draino)
 or the [cluster-api](https://cluster-api.sigs.k8s.io/tasks/healthcheck.html).
@@ -70,7 +70,7 @@ SCIURO_NODE_FILTERS: "instance=~({{.FullName}}|{{.ShortName}})"
 
 Some additional optional settings are as follows:
 ```
-# AlertSilenced controls whether silenced alerts are retrieved from alertmanager
+# AlertSilenced controls whether silenced alerts are retrieved from Alertmanager
 SCIURO_ALERT_SILENCED: "false"
 
 # AlertCacheTTL is the time between fetching alerts
