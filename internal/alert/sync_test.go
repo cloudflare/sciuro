@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/prometheus/alertmanager/api/v2/client/alert"
 	"github.com/prometheus/alertmanager/api/v2/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
@@ -17,7 +17,7 @@ func Test_syncer_Get(t *testing.T) {
 
 	mockAlertClient := &mockAlertClient{}
 
-	s, err := NewSyncer(mockAlertClient, log.NullLogger{}, metrics.Registry, "re", "instance={{.FullName}}", time.Minute, true)
+	s, err := NewSyncer(mockAlertClient, logr.Discard(), metrics.Registry, "re", "instance={{.FullName}}", time.Minute, true)
 	assert.NoError(t, err)
 
 	response1 := response1()

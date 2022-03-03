@@ -3,27 +3,27 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "7c10271940c6bce577d51a075ae77728964db285dac0a46614a7934dc34303e6",
+    sha256 = "ab21448cef298740765f33a7f5acee0607203e4ea321219f2a4c85a6e0fb0a27",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.26.0/rules_go-v0.26.0.tar.gz",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.26.0/rules_go-v0.26.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.32.0/rules_go-v0.32.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.32.0/rules_go-v0.32.0.zip",
     ],
 )
 
 http_archive(
     name = "bazel_gazelle",
-    sha256 = "62ca106be173579c0a167deb23358fdfe71ffa1e4cfdddf5582af26520f1c66f",
+    sha256 = "5982e5463f171da99e3bdaeff8c0f48283a7a5f396ec5282910b9e8a49c0dd7e",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.23.0/bazel-gazelle-v0.23.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.23.0/bazel-gazelle-v0.23.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.25.0/bazel-gazelle-v0.25.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.25.0/bazel-gazelle-v0.25.0.tar.gz",
     ],
 )
 
 http_archive(
     name = "io_bazel_rules_docker",
-    sha256 = "59d5b42ac315e7eadffa944e86e90c2990110a1c8075f1cd145f487e999d22b3",
-    strip_prefix = "rules_docker-0.17.0",
-    urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.17.0/rules_docker-v0.17.0.tar.gz"],
+    sha256 = "27d53c1d646fc9537a70427ad7b034734d08a9c38924cc6357cc973fed300820",
+    strip_prefix = "rules_docker-0.24.0",
+    urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.24.0/rules_docker-v0.24.0.tar.gz"],
 )
 
 http_archive(
@@ -39,7 +39,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 
 go_rules_dependencies()
 
-go_register_toolchains(version = "1.16")
+go_register_toolchains(version = "1.17.11")
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("//:gazelle.bzl", "deps")
@@ -72,10 +72,10 @@ load(
     "container_pull",
 )
 
-# https://hub.docker.com/layers/alpine/library/alpine/3.12.0/images/sha256-90baa0922fe90624b05cb5766fa5da4e337921656c2f8e2b13bd3c052a0baac1
+# https://hub.docker.com/layers/alpine/library/alpine/3.15.4/images/sha256-a777c9c66ba177ccfea23f2a216ff6721e78a662cd17019488c417135299cd89
 container_pull(
     name = "alpinebase",
-    digest = "sha256:90baa0922fe90624b05cb5766fa5da4e337921656c2f8e2b13bd3c052a0baac1",
+    digest = "sha256:a777c9c66ba177ccfea23f2a216ff6721e78a662cd17019488c417135299cd89",
     registry = "docker.io",
     repository = "alpine",
 )
@@ -97,12 +97,12 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 git_repository(
-    name = "com_github_atlassian_bazel_tools",
-    commit = "7fd8d2567c69670b280966cacae72c7c6f267fe7",
-    remote = "https://github.com/atlassian/bazel-tools.git",
-    shallow_since = "1601963290 +1100",
+    name = "com_github_ash2k_bazel_tools",
+    commit = "aefb11464b6b83590e4154a98c29171092ca290f",
+    remote = "https://github.com/ash2k/bazel-tools",
+    shallow_since = "1644872739 +1100",
 )
 
-load("@com_github_atlassian_bazel_tools//golangcilint:deps.bzl", "golangcilint_dependencies")
+load("@com_github_ash2k_bazel_tools//golangcilint:deps.bzl", "golangcilint_dependencies")
 
 golangcilint_dependencies()

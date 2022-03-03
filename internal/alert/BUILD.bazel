@@ -28,13 +28,13 @@ go_test(
     ],
     embed = [":alert"],
     deps = [
+        "@com_github_go_logr_logr//:logr",
         "@com_github_prometheus_alertmanager//api/v2/client/alert",
         "@com_github_prometheus_alertmanager//api/v2/models",
         "@com_github_prometheus_alertmanager//pkg/labels",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",
-        "@io_k8s_sigs_controller_runtime//pkg/log",
         "@io_k8s_sigs_controller_runtime//pkg/metrics",
     ],
 )

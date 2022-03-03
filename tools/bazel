@@ -58,7 +58,7 @@ function download_bazelisk() {
   (>&2 printf "Downloading bazelisk %s from %s.\n" "${BAZELISK_VERSION}" "${url}")
 
   (>&2 curl --location "${url}" --output "${tempfile}")
-  echo "${BAZELISK_SHA256}  ${tempfile}" | shasum --algorithm 256 --check --status -
+  echo "${BAZELISK_SHA256}  ${tempfile}" | sha256sum  --check --status -
 
   chmod +x "${tempfile}"
   mv "${tempfile}" "${BAZELISK_BIN_DIR}/${BAZELISK_BIN}"

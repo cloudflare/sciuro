@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cloudflare/sciuro/internal/alert"
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/alertmanager/api/v2/models"
 	"github.com/prometheus/client_golang/prometheus"
@@ -19,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -141,7 +141,7 @@ func Test_Reconcile(t *testing.T) {
 			c := &mockK8SClient{}
 			ac := &mockAlertCache{}
 			tt.updateMocks(c, ac)
-			n := NewNodeStatusReconciler(c, log.NullLogger{}, prometheus.NewRegistry(), time.Minute, time.Minute, ac)
+			n := NewNodeStatusReconciler(c, logr.Discard(), prometheus.NewRegistry(), time.Minute, time.Minute, ac)
 			got, err := n.Reconcile(context.Background(), request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
@@ -688,7 +688,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 
 			r := &nodeStatusReconciler{
 				c:                nil,
-				log:              log.NullLogger{},
+				log:              logr.Discard(),
 				reconcileTimeout: time.Second,
 				linger:           linger,
 				alertCache:       mockClient,
@@ -696,7 +696,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 					Name: "test",
 				}, []string{"old_status", "new_status"}),
 			}
-			if err := r.updateNodeStatuses(log.NullLogger{}, tt.node); (err != nil) != tt.wantErr {
+			if err := r.updateNodeStatuses(logr.Discard(), tt.node); (err != nil) != tt.wantErr {
 				t.Errorf("updateNodeStatuses() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr && !equality.Semantic.DeepEqual(tt.expected, tt.node) {
