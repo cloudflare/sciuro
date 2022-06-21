@@ -35,6 +35,9 @@ type config struct {
 	DevMode bool `env:"SCIURO_DEV_MODE" envDefault:"false"`
 	// ReconcileTimeout is the maximum time given to reconcile a node.
 	ReconcileTimeout time.Duration `env:"SCIURO_RECONCILE_TIMEOUT" envDefault:"45s"`
+	// MaxConcurrentReconciles is the maximum number of nodes which can be
+	// reconciled concurrently.
+	MaxConcurrentReconciles int `env:"SCIURO_MAX_CONCURRENT_RECONCILES" envDefault:"1"`
 	// AlertReceiver is the receiver to use for server-side filtering of alerts
 	// must be the same across all targeted nodes in the cluster
 	AlertReceiver string `env:"SCIURO_ALERT_RECEIVER,required"`
@@ -121,7 +124,8 @@ func main() {
 		)
 
 		c, err := controller.New("node-status-controller", mgr, controller.Options{
-			Reconciler: r,
+			MaxConcurrentReconciles: cfg.MaxConcurrentReconciles,
+			Reconciler:              r,
 		})
 		if err != nil {
 			entryLog.Error(err, "unable to set up individual controller")
