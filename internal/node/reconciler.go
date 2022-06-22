@@ -37,6 +37,7 @@ const (
 type nodeStatusReconciler struct {
 	c                   client.Client
 	log                 logr.Logger
+	resyncInterval      time.Duration
 	reconcileTimeout    time.Duration
 	linger              time.Duration
 	alertCache          alert.Cache
@@ -71,6 +72,7 @@ func NewNodeStatusReconciler(
 	c client.Client,
 	log logr.Logger,
 	prom prometheus.Registerer,
+	resyncInterval,
 	reconcileTimeout,
 	linger time.Duration,
 	ac alert.Cache,
@@ -87,6 +89,7 @@ func NewNodeStatusReconciler(
 	return &nodeStatusReconciler{
 		c:                   c,
 		log:                 log,
+		resyncInterval:      resyncInterval,
 		reconcileTimeout:    reconcileTimeout,
 		linger:              linger,
 		alertCache:          ac,
@@ -115,14 +118,14 @@ func (n *nodeStatusReconciler) Reconcile(ctx context.Context, request reconcile.
 		return reconcile.Result{}, err
 	}
 	if equality.Semantic.DeepEqual(desiredNode, currentNode) {
-		return reconcile.Result{}, nil
+		return reconcile.Result{RequeueAfter: n.resyncInterval}, nil
 	}
 	patch := client.MergeFrom(currentNode)
 	if err := n.c.Status().Patch(ctx, desiredNode, patch); err != nil {
 		log.Error(err, "could not patch node")
 		return reconcile.Result{}, err
 	}
-	return reconcile.Result{}, nil
+	return reconcile.Result{RequeueAfter: n.resyncInterval}, nil
 }
 
 func (n *nodeStatusReconciler) updateNodeStatuses(log logr.Logger, node *corev1.Node) error {

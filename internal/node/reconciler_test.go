@@ -30,6 +30,7 @@ var (
 )
 
 func Test_Reconcile(t *testing.T) {
+	const resyncInterval = 2 * time.Minute
 	tests := []struct {
 		name        string
 		updateMocks func(c *mockK8SClient, cache *mockAlertCache)
@@ -85,7 +86,7 @@ func Test_Reconcile(t *testing.T) {
 				}
 				c.On("Patch", mock.Anything, mock.MatchedBy(match), mock.Anything, mock.Anything).Return(nil)
 			},
-			want:    reconcile.Result{},
+			want:    reconcile.Result{RequeueAfter: resyncInterval},
 			wantErr: false,
 		},
 		{
@@ -129,7 +130,7 @@ func Test_Reconcile(t *testing.T) {
 					},
 				).Return(nil)
 			},
-			want:    reconcile.Result{},
+			want:    reconcile.Result{RequeueAfter: resyncInterval},
 			wantErr: false,
 		},
 	}
@@ -141,7 +142,7 @@ func Test_Reconcile(t *testing.T) {
 			c := &mockK8SClient{}
 			ac := &mockAlertCache{}
 			tt.updateMocks(c, ac)
-			n := NewNodeStatusReconciler(c, logr.Discard(), prometheus.NewRegistry(), time.Minute, time.Minute, ac)
+			n := NewNodeStatusReconciler(c, logr.Discard(), prometheus.NewRegistry(), resyncInterval, time.Minute, time.Minute, ac)
 			got, err := n.Reconcile(context.Background(), request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
