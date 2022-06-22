@@ -74,7 +74,6 @@ func main() {
 	entryLog := log.WithName("entrypoint")
 
 	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{
-		SyncPeriod:              &cfg.NodeResync,
 		LeaderElection:          true,
 		LeaderElectionID:        cfg.LeaderElectionID,
 		LeaderElectionNamespace: cfg.LeaderElectionNamespace,
@@ -118,6 +117,7 @@ func main() {
 			mgr.GetClient(),
 			log.WithName("reconciler"),
 			metrics.Registry,
+			cfg.NodeResync,
 			cfg.ReconcileTimeout,
 			cfg.LingerResolvedDuration,
 			as,
