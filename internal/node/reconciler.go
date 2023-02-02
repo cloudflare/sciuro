@@ -132,15 +132,19 @@ func (n *nodeStatusReconciler) updateNodeStatuses(log logr.Logger, node *corev1.
 	alerts, currentTime, fetchErr := n.alertCache.Get(node.Name)
 	current := v1.NewTime(currentTime)
 
-	incomingConditions := make(map[corev1.NodeConditionType]*corev1.NodeCondition, len(alerts))
+	incomingConditions := make(map[corev1.NodeConditionType]*conditionAndPriority, len(alerts))
 	// only if we have valid results (no err) will we need converted conditions
 	if fetchErr == nil {
 		for _, al := range alerts {
-			condition, err := convertAlertToCondition(log, al, current)
+			condAndPriority, err := convertAlertToCondition(log, al, current)
 			if err != nil {
 				return err
 			}
-			incomingConditions[condition.Type] = condition
+			existing, ok := incomingConditions[condAndPriority.condition.Type]
+			// only overwrite if new condition is of higher priority
+			if !ok || existing.priority > condAndPriority.priority {
+				incomingConditions[condAndPriority.condition.Type] = condAndPriority
+			}
 		}
 	}
 
@@ -153,7 +157,7 @@ func (n *nodeStatusReconciler) updateNodeStatuses(log logr.Logger, node *corev1.
 		}
 
 		condLog := log.WithValues("condition", existing.Type, "oldStatus", existing.Status)
-		updated, updateExists := incomingConditions[existing.Type]
+		updatedAndPriority, updateExists := incomingConditions[existing.Type]
 
 		// fetchErr present - mark conditions as Unknown
 		if fetchErr != nil {
@@ -172,6 +176,7 @@ func (n *nodeStatusReconciler) updateNodeStatuses(log logr.Logger, node *corev1.
 
 		// alert is present - update accordingly
 		if updateExists {
+			updated := updatedAndPriority.condition
 			existing.LastHeartbeatTime = updated.LastHeartbeatTime
 			existing.Message = updated.Message
 			existing.Reason = updated.Reason
@@ -207,13 +212,15 @@ func (n *nodeStatusReconciler) updateNodeStatuses(log logr.Logger, node *corev1.
 	}
 
 	// for any remaining incoming conditions we haven't yet seen on the current conditions, append
-	for _, incomingCondition := range incomingConditions {
-		if incomingCondition != nil {
-			n.updateStatusCounter.WithLabelValues("", string(incomingCondition.Status)).Inc()
-			condLog := log.WithValues("condition", incomingCondition.Type, "newStatus", incomingCondition.Status)
-			condLog.Info("adding new condition")
-			nonDeletedConditions = append(nonDeletedConditions, *incomingCondition)
+	for _, incomingCondAndPriority := range incomingConditions {
+		if incomingCondAndPriority == nil {
+			continue
 		}
+		incomingCondition := incomingCondAndPriority.condition
+		n.updateStatusCounter.WithLabelValues("", string(incomingCondition.Status)).Inc()
+		condLog := log.WithValues("condition", incomingCondition.Type, "newStatus", incomingCondition.Status)
+		condLog.Info("adding new condition")
+		nonDeletedConditions = append(nonDeletedConditions, *incomingCondition)
 	}
 
 	node.Status.Conditions = nonDeletedConditions
@@ -227,7 +234,12 @@ func shouldDelete(condition *corev1.NodeCondition, linger time.Duration, current
 		current.Sub(condition.LastTransitionTime.Time) > linger
 }
 
-func convertAlertToCondition(olog logr.Logger, al *models.GettableAlert, currentTime v1.Time) (*corev1.NodeCondition, error) {
+type conditionAndPriority struct {
+	condition *corev1.NodeCondition
+	priority  int
+}
+
+func convertAlertToCondition(olog logr.Logger, al *models.GettableAlert, currentTime v1.Time) (*conditionAndPriority, error) {
 	alertname := al.Labels[alertNameLabel]
 	if alertname == "" {
 		return nil, errors.New("no alertname label")
@@ -256,5 +268,8 @@ func convertAlertToCondition(olog logr.Logger, al *models.GettableAlert, current
 		Reason:             reasonFiring,
 		Message:            message,
 	}
-	return condition, nil
+	return &conditionAndPriority{
+		condition: condition,
+		priority:  priority,
+	}, nil
 }

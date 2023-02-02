@@ -245,6 +245,108 @@ func Test_updateNodeStatuses(t *testing.T) {
 			},
 		},
 		{
+			name: "test single add (with priority) where there are multiple alerts with same name",
+			node: newNode(corev1.NodeCondition{
+				Status: "True",
+				Type:   "Ready",
+			}),
+			expected: newNode(
+				corev1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+				corev1.NodeCondition{
+					Status:             "True",
+					Type:               "AlertManager_NodeOnFire",
+					Reason:             "AlertIsFiring",
+					Message:            "[P5] Node has erupted into fire at 500C",
+					LastHeartbeatTime:  currentTime,
+					LastTransitionTime: currentTime,
+				},
+			),
+			updateMock: func(client *mockAlertCache) {
+				client.On("Get", "node1").Return(
+					models.GettableAlerts{
+						&models.GettableAlert{
+							Annotations: map[string]string{
+								"summary": "Node has erupted into fire at 500C",
+							},
+							Alert: models.Alert{
+								Labels: map[string]string{
+									"alertname": "NodeOnFire",
+									"priority":  "5",
+								},
+							},
+						},
+						&models.GettableAlert{
+							Annotations: map[string]string{
+								"summary": "Node has erupted into fire at 500C",
+							},
+							Alert: models.Alert{
+								Labels: map[string]string{
+									"alertname": "NodeOnFire",
+									"priority":  "6",
+								},
+							},
+						},
+					},
+					currentTime.Time,
+					nil,
+				)
+			},
+		},
+		{
+			name: "test single add (with priority) where there are multiple alerts with same name (reversed)",
+			node: newNode(corev1.NodeCondition{
+				Status: "True",
+				Type:   "Ready",
+			}),
+			expected: newNode(
+				corev1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+				corev1.NodeCondition{
+					Status:             "True",
+					Type:               "AlertManager_NodeOnFire",
+					Reason:             "AlertIsFiring",
+					Message:            "[P5] Node has erupted into fire at 500C",
+					LastHeartbeatTime:  currentTime,
+					LastTransitionTime: currentTime,
+				},
+			),
+			updateMock: func(client *mockAlertCache) {
+				client.On("Get", "node1").Return(
+					models.GettableAlerts{
+						&models.GettableAlert{
+							Annotations: map[string]string{
+								"summary": "Node has erupted into fire at 500C",
+							},
+							Alert: models.Alert{
+								Labels: map[string]string{
+									"alertname": "NodeOnFire",
+									"priority":  "6",
+								},
+							},
+						},
+						&models.GettableAlert{
+							Annotations: map[string]string{
+								"summary": "Node has erupted into fire at 500C",
+							},
+							Alert: models.Alert{
+								Labels: map[string]string{
+									"alertname": "NodeOnFire",
+									"priority":  "5",
+								},
+							},
+						},
+					},
+					currentTime.Time,
+					nil,
+				)
+			},
+		},
+		{
 			name: "missing alertname label",
 			node: newNode(corev1.NodeCondition{
 				Status: "True",
