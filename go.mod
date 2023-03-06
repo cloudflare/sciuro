@@ -78,7 +78,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.34.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
-	github.com/prometheus/exporter-toolkit v0.7.1 // indirect
+	github.com/prometheus/exporter-toolkit v0.7.3 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
