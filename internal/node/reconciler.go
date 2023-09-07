@@ -54,16 +54,16 @@ var _ reconcile.Reconciler = &nodeStatusReconciler{}
 //
 // NodeConditions created from a given alert have the provided structure:
 //
-//     	NodeCondition{
-//		    Type:               "AlertManager_" + $labels.alertname
-//		    Status:             True - if firing,
-//		                        False if not firing,
-//		                        Unknown if alerts are unavailable
-//		    LastHeartbeatTime:  currentTime,
-//		    LastTransitionTime: currentTime if status changed,
-//		    Reason:             One of "AlertIsFiring", "AlertIsNotFiring", "AlertsUnavailable"
-//		    Message:            $annotations.summary if present
-//	    }
+//	    	NodeCondition{
+//			    Type:               "AlertManager_" + $labels.alertname
+//			    Status:             True - if firing,
+//			                        False if not firing,
+//			                        Unknown if alerts are unavailable
+//			    LastHeartbeatTime:  currentTime,
+//			    LastTransitionTime: currentTime if status changed,
+//			    Reason:             One of "AlertIsFiring", "AlertIsNotFiring", "AlertsUnavailable"
+//			    Message:            $annotations.summary if present
+//		    }
 //
 // The linger option sets the minimum time a NodeCondition with a False Status will be retained.
 // A NodeCondition that has been False for the entire linger duration will be removed from
@@ -189,26 +189,25 @@ func (n *nodeStatusReconciler) updateNodeStatuses(log logr.Logger, node *corev1.
 			nonDeletedConditions = append(nonDeletedConditions, *existing)
 			incomingConditions[existing.Type] = nil
 			continue
-		} else { // alert is not present - set status to false (or delete)
-			if existing.Status != statusFalse {
-				existing.LastTransitionTime = current
-				n.updateStatusCounter.WithLabelValues(string(existing.Status), statusFalse).Inc()
-				condLog.WithValues("newStatus", statusFalse).Info("updating existing condition with new status")
-				existing.Status = statusFalse
-			}
-			existing.Reason = reasonNotFiring
-			existing.Message = ""
-			existing.LastHeartbeatTime = current
-			if n.linger != 0 {
-				if shouldDelete(existing, n.linger, current) {
-					n.updateStatusCounter.WithLabelValues(string(existing.Status), "").Inc()
-					condLog.Info("deleting lingering condition")
-					continue
-				}
-			}
-			nonDeletedConditions = append(nonDeletedConditions, *existing)
-			continue
 		}
+		// else alert is not present - set status to false (or delete)
+		if existing.Status != statusFalse {
+			existing.LastTransitionTime = current
+			n.updateStatusCounter.WithLabelValues(string(existing.Status), statusFalse).Inc()
+			condLog.WithValues("newStatus", statusFalse).Info("updating existing condition with new status")
+			existing.Status = statusFalse
+		}
+		existing.Reason = reasonNotFiring
+		existing.Message = ""
+		existing.LastHeartbeatTime = current
+		if n.linger != 0 {
+			if shouldDelete(existing, n.linger, current) {
+				n.updateStatusCounter.WithLabelValues(string(existing.Status), "").Inc()
+				condLog.Info("deleting lingering condition")
+				continue
+			}
+		}
+		nonDeletedConditions = append(nonDeletedConditions, *existing)
 	}
 
 	// for any remaining incoming conditions we haven't yet seen on the current conditions, append
@@ -248,11 +247,11 @@ func convertAlertToCondition(olog logr.Logger, al *models.GettableAlert, current
 	priority := defaultPriority
 	rawPriority, ok := al.Labels[alertPriorityLabel]
 	if ok {
-		if parsed, err := strconv.Atoi(rawPriority); err != nil {
+		parsed, err := strconv.Atoi(rawPriority)
+		if err != nil {
 			return nil, errors.New("malformed alert priority")
-		} else {
-			priority = parsed
 		}
+		priority = parsed
 	} else {
 		log.Info("No priority label present, using default priority")
 	}

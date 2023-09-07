@@ -15,9 +15,9 @@ import (
 
 func Test_syncer_Get(t *testing.T) {
 
-	mockAlertClient := &mockAlertClient{}
+	mClient := &mockAlertClient{}
 
-	s, err := NewSyncer(mockAlertClient, logr.Discard(), metrics.Registry, "re", "instance={{.FullName}}", time.Minute, true)
+	s, err := NewSyncer(mClient, logr.Discard(), metrics.Registry, "re", "instance={{.FullName}}", time.Minute, true)
 	assert.NoError(t, err)
 
 	response1 := response1()
@@ -26,13 +26,13 @@ func Test_syncer_Get(t *testing.T) {
 
 	_, _, err = s.Get("node1")
 	assert.EqualError(t, err, "cache is not yet ready")
-	mockAlertClient.AssertExpectations(t)
+	mClient.AssertExpectations(t)
 
 	getParamsMatcher := func(params *alert.GetAlertsParams) bool {
 		return *params.Active && *params.Silenced
 	}
 
-	mockAlertClient.On("GetAlerts", mock.MatchedBy(getParamsMatcher)).Return(response1, nil).Once()
+	mClient.On("GetAlerts", mock.MatchedBy(getParamsMatcher), mock.Anything).Return(response1, nil).Once()
 	before = time.Now()
 	s.SyncOnce()
 	after = time.Now()
@@ -41,14 +41,14 @@ func Test_syncer_Get(t *testing.T) {
 	assert.EqualValues(t, response1.Payload, alerts)
 	assert.True(t, fetchTime.Before(after))
 	assert.True(t, fetchTime.After(before))
-	mockAlertClient.AssertExpectations(t)
+	mClient.AssertExpectations(t)
 
-	alerts, fetchTime, err = s.Get("node2")
+	alerts, _, err = s.Get("node2")
 	assert.Nil(t, err)
 	assert.Empty(t, alerts)
-	mockAlertClient.AssertExpectations(t)
+	mClient.AssertExpectations(t)
 
-	mockAlertClient.On("GetAlerts", mock.Anything).Return(nil, errors.New("an error")).Once()
+	mClient.On("GetAlerts", mock.Anything, mock.Anything).Return(nil, errors.New("an error")).Once()
 	before = time.Now()
 	s.SyncOnce()
 	after = time.Now()
@@ -57,7 +57,7 @@ func Test_syncer_Get(t *testing.T) {
 	assert.EqualError(t, err, "an error")
 	assert.True(t, fetchTime.Before(after))
 	assert.True(t, fetchTime.After(before))
-	mockAlertClient.AssertExpectations(t)
+	mClient.AssertExpectations(t)
 
 }
 
@@ -84,8 +84,8 @@ type mockAlertClient struct {
 	mock.Mock
 }
 
-func (m *mockAlertClient) GetAlerts(params *alert.GetAlertsParams) (*alert.GetAlertsOK, error) {
-	args := m.Called(params)
+func (m *mockAlertClient) GetAlerts(params *alert.GetAlertsParams, opts ...alert.ClientOption) (*alert.GetAlertsOK, error) {
+	args := m.Called(params, opts)
 	resp := args.Get(0)
 	if resp == nil {
 		return nil, args.Error(1)

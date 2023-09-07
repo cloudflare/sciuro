@@ -1,8 +1,8 @@
 diff --git a/k8s/objects.bzl b/k8s/objects.bzl
-index b845125..2481f66 100644
+index dda6dc1..8fa920e 100644
 --- a/k8s/objects.bzl
 +++ b/k8s/objects.bzl
-@@ -95,9 +95,3 @@ def k8s_objects(name, objects, **kwargs):
+@@ -106,9 +106,3 @@ def k8s_objects(name, objects, **kwargs):
      # TODO(mattmoor): We may have to normalize the labels that come
      # in through objects.
      _run_all(name = name, objects = _cmd_objects("", objects), delimiter = "echo ---\n", **kwargs)
@@ -11,4 +11,4 @@ index b845125..2481f66 100644
 -    _run_all(name = name + ".delete", objects = _cmd_objects(".delete", objects, True), **kwargs)
 -    _run_all(name = name + ".replace", objects = _cmd_objects(".replace", objects), **kwargs)
 -    _run_all(name = name + ".apply", objects = _cmd_objects(".apply", objects), **kwargs)
--    _run_all(name = name + ".diff", objects = _cmd_objects(".diff", objects), **kwargs)
+-    _run_all(name = name + ".diff", objects = _cmd_objects(".diff", objects), wrap_exits = True, **kwargs)

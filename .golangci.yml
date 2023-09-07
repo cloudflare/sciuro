@@ -1,41 +1,39 @@
 output:
   format: tab
-
 run:
   timeout: 5m
   modules-download-mode: readonly
 
 linters:
-  disable-all: true
   enable:
-    - govet
-    - staticcheck
-    - unused
-    - gosimple
-    - structcheck
-    - varcheck
-    - ineffassign
-    - deadcode
-    - typecheck
-    - errcheck
     - bodyclose
-    - stylecheck
-    - gosec
-    - interfacer
-    - unconvert
-    - goconst
-    - goimports
-    - misspell
-    - unparam
+    - contextcheck
+    - decorder
     - dogsled
+    - errcheck
+    - errorlint
+    - exportloopref
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - godox
+    - goimports
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
     - nakedret
     - prealloc
-    - gocritic
-    - gochecknoinits
-    - godox
+    - revive
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
 linters-settings:
-  errcheck:
-    exclude: .errcheckignore
   gocritic:
     enabled-tags:
       - diagnostic
@@ -51,12 +49,12 @@ linters-settings:
       - rangeValCopy
       - unnecessaryBlock
   gofmt:
-    # simplify code: gofmt with `-s` option, true by default
     simplify: true
   misspell:
     locale: US
+    ignore-words:
+      - clas
   godox:
     keywords:
       - HACK
       - XXX
-

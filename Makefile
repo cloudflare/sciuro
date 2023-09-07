@@ -17,7 +17,8 @@ clean-bazel:
 .PHONY: check
 check:
 	@echo running checks
-	@./tools/bazel run //:golangcilint
+	# TODO: Not well incorporated into bazel
+	@golangcilint run ./...
 
 .PHONY: dep-fix
 dep-fix:
