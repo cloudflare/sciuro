@@ -108,7 +108,7 @@ func NewSyncer(
 }
 
 type alertClient interface {
-	GetAlerts(params *alert.GetAlertsParams) (*alert.GetAlertsOK, error)
+	GetAlerts(params *alert.GetAlertsParams, opts ...alert.ClientOption) (*alert.GetAlertsOK, error)
 }
 
 func (s *syncer) NeedLeaderElection() bool {

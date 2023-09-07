@@ -1,5 +1,5 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "sciuro",
@@ -9,7 +9,7 @@ go_library(
     deps = [
         "//internal/alert",
         "//internal/node",
-        "@com_github_caarlos0_env//:env",
+        "@com_github_caarlos0_env_v9//:env",
         "@com_github_prometheus_alertmanager//cli",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_sigs_controller_runtime//pkg/client/config",
@@ -39,7 +39,7 @@ go_library(
     deps = [
         "//internal/alert",
         "//internal/node",
-        "@com_github_caarlos0_env//:env",
+        "@com_github_caarlos0_env_v9//:env",
         "@com_github_prometheus_alertmanager//cli",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_sigs_controller_runtime//pkg/client/config",

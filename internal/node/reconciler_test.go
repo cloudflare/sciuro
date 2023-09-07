@@ -10,16 +10,17 @@ import (
 	"github.com/cloudflare/sciuro/internal/alert"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/prometheus/alertmanager/api/v2/models"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/mock"
+	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -33,13 +34,49 @@ func Test_Reconcile(t *testing.T) {
 	const resyncInterval = 2 * time.Minute
 	tests := []struct {
 		name        string
-		updateMocks func(c *mockK8SClient, cache *mockAlertCache)
+		node        *corev1.Node
+		expected    *corev1.Node
+		updateMocks func(cache *mockAlertCache)
 		want        reconcile.Result
 		wantErr     bool
 	}{
 		{
 			name: "update node",
-			updateMocks: func(c *mockK8SClient, cache *mockAlertCache) {
+			node: &corev1.Node{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: corev1.NodeStatus{
+					Conditions: []corev1.NodeCondition{
+						{
+							Type:   "Ready",
+							Status: "True",
+						},
+					},
+				},
+			},
+			expected: &corev1.Node{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: corev1.NodeStatus{
+					Conditions: []corev1.NodeCondition{
+						{
+							Type:   "Ready",
+							Status: "True",
+						},
+						{
+							Status:             "True",
+							Type:               "AlertManager_NodeOnFire",
+							Reason:             "AlertIsFiring",
+							Message:            "[P9] Node has erupted into fire at 500C",
+							LastHeartbeatTime:  currentTime,
+							LastTransitionTime: currentTime,
+						},
+					},
+				},
+			},
+			updateMocks: func(cache *mockAlertCache) {
 				cache.On("Get", "node1").Return(
 					models.GettableAlerts{
 						&models.GettableAlert{
@@ -56,42 +93,55 @@ func Test_Reconcile(t *testing.T) {
 					currentTime.Time,
 					nil,
 				)
-				c.On("Get", mock.Anything, types.NamespacedName{Name: "node1"}, mock.Anything).Run(
-					func(args mock.Arguments) {
-						node := args.Get(2).(*corev1.Node)
-						node.Name = "node1"
-						node.Status.Conditions = []corev1.NodeCondition{
-							{
-								Type:   "Ready",
-								Status: "True",
-							},
-						}
-					},
-				).Return(nil)
-				match := func(obj interface{}) bool {
-					return equality.Semantic.DeepEqual(obj, newNode(
-						corev1.NodeCondition{
-							Type:   "Ready",
-							Status: "True",
-						},
-						corev1.NodeCondition{
-							Status:             "True",
-							Type:               "AlertManager_NodeOnFire",
-							Reason:             "AlertIsFiring",
-							Message:            "[P9] Node has erupted into fire at 500C",
-							LastHeartbeatTime:  currentTime,
-							LastTransitionTime: currentTime,
-						},
-					))
-				}
-				c.On("Patch", mock.Anything, mock.MatchedBy(match), mock.Anything, mock.Anything).Return(nil)
 			},
 			want:    reconcile.Result{RequeueAfter: resyncInterval},
 			wantErr: false,
 		},
 		{
 			name: "no update",
-			updateMocks: func(c *mockK8SClient, cache *mockAlertCache) {
+			node: &corev1.Node{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: corev1.NodeStatus{
+					Conditions: []corev1.NodeCondition{
+						{
+							Type:   "Ready",
+							Status: "True",
+						},
+						{
+							Status:             "True",
+							Type:               "AlertManager_NodeOnFire",
+							Reason:             "AlertIsFiring",
+							Message:            "[P3] Node has erupted into fire at 500C",
+							LastHeartbeatTime:  oldTime,
+							LastTransitionTime: oldTime,
+						},
+					},
+				},
+			},
+			expected: &corev1.Node{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: corev1.NodeStatus{
+					Conditions: []corev1.NodeCondition{
+						{
+							Type:   "Ready",
+							Status: "True",
+						},
+						{
+							Status:             "True",
+							Type:               "AlertManager_NodeOnFire",
+							Reason:             "AlertIsFiring",
+							Message:            "[P3] Node has erupted into fire at 500C",
+							LastHeartbeatTime:  oldTime,
+							LastTransitionTime: oldTime,
+						},
+					},
+				},
+			},
+			updateMocks: func(cache *mockAlertCache) {
 				cache.On("Get", "node1").Return(
 					models.GettableAlerts{
 						&models.GettableAlert{
@@ -109,26 +159,6 @@ func Test_Reconcile(t *testing.T) {
 					oldTime.Time,
 					nil,
 				)
-				c.On("Get", mock.Anything, types.NamespacedName{Name: "node1"}, mock.Anything).Run(
-					func(args mock.Arguments) {
-						node := args.Get(2).(*corev1.Node)
-						node.Name = "node1"
-						node.Status.Conditions = []corev1.NodeCondition{
-							{
-								Type:   "Ready",
-								Status: "True",
-							},
-							{
-								Status:             "True",
-								Type:               "AlertManager_NodeOnFire",
-								Reason:             "AlertIsFiring",
-								Message:            "[P3] Node has erupted into fire at 500C",
-								LastHeartbeatTime:  oldTime,
-								LastTransitionTime: oldTime,
-							},
-						}
-					},
-				).Return(nil)
 			},
 			want:    reconcile.Result{RequeueAfter: resyncInterval},
 			wantErr: false,
@@ -139,9 +169,15 @@ func Test_Reconcile(t *testing.T) {
 			request := reconcile.Request{
 				NamespacedName: types.NamespacedName{Name: "node1"},
 			}
-			c := &mockK8SClient{}
+			scheme := runtime.NewScheme()
+			assert.NilError(t, corev1.AddToScheme(scheme))
+
+			c := fake.NewClientBuilder().
+				WithRuntimeObjects(tt.node).
+				WithScheme(scheme).
+				Build()
 			ac := &mockAlertCache{}
-			tt.updateMocks(c, ac)
+			tt.updateMocks(ac)
 			n := NewNodeStatusReconciler(c, logr.Discard(), prometheus.NewRegistry(), resyncInterval, time.Minute, time.Minute, ac)
 			got, err := n.Reconcile(context.Background(), request)
 			if (err != nil) != tt.wantErr {
@@ -151,7 +187,12 @@ func Test_Reconcile(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Reconcile() got = %v, want %v", got, tt.want)
 			}
-			mock.AssertExpectationsForObjects(t, c, ac)
+			mock.AssertExpectationsForObjects(t, ac)
+			actual := &corev1.Node{}
+			assert.NilError(t, c.Get(context.TODO(), types.NamespacedName{Name: tt.expected.ObjectMeta.Name}, actual))
+			assert.DeepEqual(t, tt.expected, actual,
+				cmpopts.IgnoreFields(v1.ObjectMeta{}, "ResourceVersion"),
+				cmpopts.IgnoreTypes(v1.TypeMeta{}))
 		})
 	}
 }
@@ -836,57 +877,3 @@ func newNode(conditions ...corev1.NodeCondition) *corev1.Node {
 		},
 	}
 }
-
-type mockK8SClient struct {
-	mock.Mock
-}
-
-func (m *mockK8SClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
-	args := m.Called(ctx, key, obj)
-	return args.Error(0)
-}
-
-func (m *mockK8SClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
-	args := m.Called(ctx, list, opts)
-	return args.Error(0)
-}
-
-func (m *mockK8SClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-	args := m.Called(ctx, obj, opts)
-	return args.Error(0)
-}
-
-func (m *mockK8SClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-	args := m.Called(ctx, obj, opts)
-	return args.Error(0)
-}
-
-func (m *mockK8SClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
-	args := m.Called(ctx, obj, opts)
-	return args.Error(0)
-}
-
-func (m *mockK8SClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
-	args := m.Called(ctx, obj, patch, opts)
-	return args.Error(0)
-}
-
-func (m *mockK8SClient) DeleteAllOf(ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption) error {
-	args := m.Called(ctx, obj, opts)
-	return args.Error(0)
-}
-
-func (m *mockK8SClient) Scheme() *runtime.Scheme {
-	panic("implement me")
-}
-
-func (m *mockK8SClient) RESTMapper() meta.RESTMapper {
-	panic("implement me")
-}
-
-func (m *mockK8SClient) Status() client.StatusWriter {
-	return m
-}
-
-var _ client.Client = &mockK8SClient{}
-var _ client.StatusWriter = &mockK8SClient{}

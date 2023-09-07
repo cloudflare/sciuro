@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v9"
 	"github.com/cloudflare/sciuro/internal/alert"
 	"github.com/cloudflare/sciuro/internal/node"
 	"github.com/prometheus/alertmanager/cli"
@@ -133,7 +133,7 @@ func main() {
 		}
 
 		// Watch Nodes and enqueue object key
-		if err := c.Watch(&source.Kind{Type: &corev1.Node{}}, &handler.EnqueueRequestForObject{}); err != nil {
+		if err := c.Watch(source.Kind(mgr.GetCache(), &corev1.Node{}), &handler.EnqueueRequestForObject{}); err != nil {
 			entryLog.Error(err, "unable to watch Nodes")
 			os.Exit(1)
 		}
