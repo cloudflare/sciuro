@@ -24,3 +24,11 @@ rules:
   - patch
   - get
   - list
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - get
+  - list
