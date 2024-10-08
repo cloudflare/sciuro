@@ -49,7 +49,7 @@ the supplied ConfigMap will set the environment variables on the Deployment.
 You must set the URL for the Alertmanager instance to sync from. In addition,
 filtering should be configured both on a global level and for each specific
 node.  The Alertmanager
-[reciever](https://prometheus.io/docs/alerting/latest/configuration/#receiver)
+[receiver](https://prometheus.io/docs/alerting/latest/configuration/#receiver)
 should be set to filter globally, while the node filters are set for matching
 alerts to a specific node.
 
@@ -115,7 +115,7 @@ SCIURO_LEADER_ID: "sciuro-leader"
 
 ## Alertmanager Configuration
 Sciuro is recommended to have its own Alertmanager
-[reciever](https://prometheus.io/docs/alerting/latest/configuration/#receiver).
+[receiver](https://prometheus.io/docs/alerting/latest/configuration/#receiver).
 Since Sciuro works in a pull model currently, this receiver does not need to
 push anywhere and can simply be an empty receiver. In addition, a
 [route](https://prometheus.io/docs/alerting/latest/configuration/#route) needs
