@@ -10,7 +10,7 @@ import (
 
 	"github.com/cloudflare/sciuro/internal/alert"
 	"github.com/go-logr/logr"
-	"github.com/prometheus/alertmanager/api/v2/models"
+	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/client_golang/prometheus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -238,7 +238,7 @@ type conditionAndPriority struct {
 	priority  int
 }
 
-func convertAlertToCondition(olog logr.Logger, al *models.GettableAlert, currentTime v1.Time) (*conditionAndPriority, error) {
+func convertAlertToCondition(olog logr.Logger, al promv1.Alert, currentTime v1.Time) (*conditionAndPriority, error) {
 	alertname := al.Labels[alertNameLabel]
 	if alertname == "" {
 		return nil, errors.New("no alertname label")
@@ -247,7 +247,7 @@ func convertAlertToCondition(olog logr.Logger, al *models.GettableAlert, current
 	priority := defaultPriority
 	rawPriority, ok := al.Labels[alertPriorityLabel]
 	if ok {
-		parsed, err := strconv.Atoi(rawPriority)
+		parsed, err := strconv.Atoi(string(rawPriority))
 		if err != nil {
 			return nil, errors.New("malformed alert priority")
 		}
@@ -257,7 +257,7 @@ func convertAlertToCondition(olog logr.Logger, al *models.GettableAlert, current
 	}
 	message := fmt.Sprintf("[P%d]", priority)
 	if summary, ok := al.Annotations[alertSummaryAnnotation]; ok {
-		message = message + " " + summary
+		message = message + " " + string(summary)
 	}
 	condition := &corev1.NodeCondition{
 		Type:               corev1.NodeConditionType(fmt.Sprintf("%s%s", conditionPrefix, alertname)),
