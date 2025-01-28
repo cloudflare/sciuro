@@ -1,13 +1,14 @@
 package alert
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/prometheus/alertmanager/api/v2/client/alert"
-	"github.com/prometheus/alertmanager/api/v2/models"
+	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -17,28 +18,24 @@ func Test_syncer_Get(t *testing.T) {
 
 	mClient := &mockAlertClient{}
 
-	s, err := NewSyncer(mClient, logr.Discard(), metrics.Registry, "re", "instance={{.FullName}}", time.Minute, true)
+	s, err := NewSyncer(mClient, logr.Discard(), metrics.Registry, `labels["instance"] == FullName`, time.Minute)
 	assert.NoError(t, err)
 
 	response1 := response1()
-	var alerts models.GettableAlerts
+	var alerts []promv1.Alert
 	var fetchTime, before, after time.Time
 
 	_, _, err = s.Get("node1")
 	assert.EqualError(t, err, "cache is not yet ready")
 	mClient.AssertExpectations(t)
 
-	getParamsMatcher := func(params *alert.GetAlertsParams) bool {
-		return *params.Active && *params.Silenced
-	}
-
-	mClient.On("GetAlerts", mock.MatchedBy(getParamsMatcher), mock.Anything).Return(response1, nil).Once()
+	mClient.On("GetAlerts", mock.Anything).Return(response1, false, nil).Once()
 	before = time.Now()
 	s.SyncOnce()
 	after = time.Now()
 	alerts, fetchTime, err = s.Get("node1")
 	assert.Nil(t, err)
-	assert.EqualValues(t, response1.Payload, alerts)
+	assert.EqualValues(t, response1, alerts)
 	assert.True(t, fetchTime.Before(after))
 	assert.True(t, fetchTime.After(before))
 	mClient.AssertExpectations(t)
@@ -48,7 +45,7 @@ func Test_syncer_Get(t *testing.T) {
 	assert.Empty(t, alerts)
 	mClient.AssertExpectations(t)
 
-	mClient.On("GetAlerts", mock.Anything, mock.Anything).Return(nil, errors.New("an error")).Once()
+	mClient.On("GetAlerts", mock.Anything).Return(nil, false, errors.New("an error")).Once()
 	before = time.Now()
 	s.SyncOnce()
 	after = time.Now()
@@ -61,20 +58,13 @@ func Test_syncer_Get(t *testing.T) {
 
 }
 
-func response1() *alert.GetAlertsOK {
-	state := "active"
-	return &alert.GetAlertsOK{
-		Payload: []*models.GettableAlert{
-			{
-				Status: &models.AlertStatus{
-					State: &state,
-				},
-				Alert: models.Alert{
-					Labels: map[string]string{
-						"alertname": "HouseOnFire",
-						"instance":  "node1",
-					},
-				},
+func response1() []promv1.Alert {
+	return []promv1.Alert{
+		{
+			State: promv1.AlertStateFiring,
+			Labels: model.LabelSet{
+				"alertname": "HouseOnFire",
+				"instance":  "node1",
 			},
 		},
 	}
@@ -84,13 +74,13 @@ type mockAlertClient struct {
 	mock.Mock
 }
 
-func (m *mockAlertClient) GetAlerts(params *alert.GetAlertsParams, opts ...alert.ClientOption) (*alert.GetAlertsOK, error) {
-	args := m.Called(params, opts)
+func (m *mockAlertClient) GetAlerts(ctx context.Context) ([]promv1.Alert, bool, error) {
+	args := m.Called(ctx)
 	resp := args.Get(0)
 	if resp == nil {
-		return nil, args.Error(1)
+		return nil, args.Bool(1), args.Error(2)
 	}
-	return args.Get(0).(*alert.GetAlertsOK), args.Error(1)
+	return args.Get(0).([]promv1.Alert), args.Bool(1), args.Error(2)
 }
 
-var _ alertClient = &mockAlertClient{}
+var _ Client = &mockAlertClient{}

@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"time"
 
 	"github.com/caarlos0/env/v9"
 	"github.com/cloudflare/sciuro/internal/alert"
 	"github.com/cloudflare/sciuro/internal/node"
-	"github.com/prometheus/alertmanager/cli"
 	corev1 "k8s.io/api/core/v1"
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -24,7 +22,9 @@ import (
 
 type config struct {
 	// AlertmanagerURL is the url for the Alertmanager instance to sync from
-	AlertmanagerURL string `env:"SCIURO_ALERTMANAGER_URL,required"`
+	AlertmanagerURL string `env:"SCIURO_ALERTMANAGER_URL"`
+	// PrometheusURLs is a list of Prometheus urls to sync from
+	PrometheusURLs []string `env:"SCIURO_PROMETHEUS_URLS"`
 	// MetricsAddr is the address and port to serve metrics from
 	MetricsAddr string `env:"SCIURO_METRICS_ADDR" envDefault:"0.0.0.0:8080"`
 	// AlertCacheTTL is the time between fetching alerts
@@ -40,14 +40,14 @@ type config struct {
 	MaxConcurrentReconciles int `env:"SCIURO_MAX_CONCURRENT_RECONCILES" envDefault:"1"`
 	// AlertReceiver is the receiver to use for server-side filtering of alerts
 	// must be the same across all targeted nodes in the cluster
-	AlertReceiver string `env:"SCIURO_ALERT_RECEIVER,required"`
+	AlertReceiver string `env:"SCIURO_ALERT_RECEIVER"`
 	// AlertSilenced controls whether silenced alerts are retrieved from alertmanager
 	AlertSilenced bool `env:"SCIURO_ALERT_SILENCED" envDefault:"false"`
-	// NodeFiltersTemplate is a golang template resulting in list of filters (comma separated)
-	// to use for each node. These filters are logically OR'd
-	// for associating alerts to a node. There are two valid variables available for substitution
-	// FullName and ShortName where ShortName is FullName upto the first . (dot)
-	NodeFiltersTemplate string `env:"SCIURO_NODE_FILTERS,required"`
+	// CelExpression is a Common Expression Language expression that runs against each alert.
+	// `labels` is a map representing the prometheus labels of the alert.
+	// There are two other valid variables available for substitution:
+	// `FullName` and `ShortName` where `ShortName` is `FullName` up to the first . (dot)
+	CelExpression string `env:"SCIURO_CEL_EXPRESSION,required"`
 	// LeaderElectionNamespace is the namespace where the leader election config map will be
 	// managed. Defaults to the current namespace.
 	LeaderElectionNamespace string `env:"SCIURO_LEADER_NAMESPACE"`
@@ -85,20 +85,35 @@ func main() {
 
 	var as alert.Syncer
 	{
-		parsedURL, err := url.Parse(cfg.AlertmanagerURL)
-		if err != nil {
-			entryLog.Error(err, "unable to setup alertmanager client")
+		var client alert.Client
+		if cfg.AlertmanagerURL != "" {
+			if cfg.AlertReceiver == "" {
+				entryLog.Error(err, "receiver must be set when using alertmanager")
+				os.Exit(1)
+			}
+			var err error
+			client, err = alert.NewAlertmanagerClient(cfg.AlertmanagerURL, cfg.AlertReceiver, cfg.AlertSilenced)
+			if err != nil {
+				entryLog.Error(err, "unable to setup alertmanager client")
+				os.Exit(1)
+			}
+		} else if cfg.PrometheusURLs != nil {
+			var err error
+			client, err = alert.NewPrometheusMultiClient(cfg.PrometheusURLs)
+			if err != nil {
+				entryLog.Error(err, "unable to setup prometheus api client(s)")
+				os.Exit(1)
+			}
+		} else {
+			entryLog.Error(err, "must specify either alertmanager url or prometheus url(s)")
 			os.Exit(1)
 		}
-		amClient := cli.NewAlertmanagerClient(parsedURL)
 		as, err = alert.NewSyncer(
-			amClient.Alert,
+			client,
 			log.WithName("syncer"),
 			metrics.Registry,
-			cfg.AlertReceiver,
-			cfg.NodeFiltersTemplate,
+			cfg.CelExpression,
 			cfg.AlertCacheTTL,
-			cfg.AlertSilenced,
 		)
 		if err != nil {
 			entryLog.Error(err, "unable to parse template")

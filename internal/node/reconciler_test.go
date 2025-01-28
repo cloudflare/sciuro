@@ -11,8 +11,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/prometheus/alertmanager/api/v2/models"
+	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/mock"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -78,15 +79,14 @@ func Test_Reconcile(t *testing.T) {
 			},
 			updateMocks: func(cache *mockAlertCache) {
 				cache.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
 							},
 						},
 					},
@@ -143,16 +143,15 @@ func Test_Reconcile(t *testing.T) {
 			},
 			updateMocks: func(cache *mockAlertCache) {
 				cache.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-									"priority":  "3",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
+								"priority":  "3",
 							},
 						},
 					},
@@ -228,15 +227,14 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
 							},
 						},
 					},
@@ -267,16 +265,15 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-									"priority":  "5",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
+								"priority":  "5",
 							},
 						},
 					},
@@ -307,27 +304,25 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-									"priority":  "5",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
+								"priority":  "5",
 							},
 						},
-						&models.GettableAlert{
-							Annotations: map[string]string{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-									"priority":  "6",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
+								"priority":  "6",
 							},
 						},
 					},
@@ -358,27 +353,24 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-									"priority":  "6",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
+								"priority":  "6",
 							},
 						},
-						&models.GettableAlert{
-							Annotations: map[string]string{
+						{
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-									"priority":  "5",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
+								"priority":  "5",
 							},
 						},
 					},
@@ -395,16 +387,15 @@ func Test_updateNodeStatuses(t *testing.T) {
 			}),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-									"priority":  "blah",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
+								"priority":  "blah",
 							},
 						},
 					},
@@ -422,15 +413,14 @@ func Test_updateNodeStatuses(t *testing.T) {
 			}),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"": "othervalue",
-								},
+							Labels: model.LabelSet{
+								"": "othervalue",
 							},
 						},
 					},
@@ -462,15 +452,14 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"description": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
 							},
 						},
 					},
@@ -571,15 +560,14 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
 							},
 						},
 					},
@@ -624,16 +612,15 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{
-						&models.GettableAlert{
-							Annotations: map[string]string{
+					[]promv1.Alert{
+						{
+							State: promv1.AlertStateFiring,
+							Annotations: model.LabelSet{
 								"summary": "Node has erupted into fire at 500C",
 							},
-							Alert: models.Alert{
-								Labels: map[string]string{
-									"alertname": "NodeOnFire",
-									"priority":  "7",
-								},
+							Labels: model.LabelSet{
+								"alertname": "NodeOnFire",
+								"priority":  "7",
 							},
 						},
 					},
@@ -674,7 +661,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{},
+					[]promv1.Alert{},
 					currentTime.Time,
 					nil,
 				)
@@ -711,7 +698,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{},
+					[]promv1.Alert{},
 					currentTime.Time,
 					nil,
 				)
@@ -738,7 +725,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 			}),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{},
+					[]promv1.Alert{},
 					currentTime.Time,
 					nil,
 				)
@@ -765,7 +752,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 			}),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{},
+					[]promv1.Alert{},
 					currentTime.Time,
 					nil,
 				)
@@ -814,7 +801,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 			),
 			updateMock: func(client *mockAlertCache) {
 				client.On("Get", "node1").Return(
-					models.GettableAlerts{},
+					[]promv1.Alert{},
 					currentTime.Time,
 					nil,
 				)
@@ -855,14 +842,14 @@ type mockAlertCache struct {
 	mock.Mock
 }
 
-func (m *mockAlertCache) Get(nodeName string) (models.GettableAlerts, time.Time, error) {
+func (m *mockAlertCache) Get(nodeName string) ([]promv1.Alert, time.Time, error) {
 	args := m.Called(nodeName)
 	alerts := args.Get(0)
 	someTime := args.Get(1).(time.Time)
 	if alerts == nil {
 		return nil, someTime, args.Error(2)
 	}
-	return args.Get(0).(models.GettableAlerts), someTime, args.Error(2)
+	return args.Get(0).([]promv1.Alert), someTime, args.Error(2)
 }
 
 var _ alert.Cache = &mockAlertCache{}

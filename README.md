@@ -6,14 +6,14 @@
 
 # Introduction
 
-Sciuro is a bridge between Alertmanager and Kubernetes to sync alerts as Node
+Sciuro is a bridge between Alertmanager or Prometheus and Kubernetes to sync alerts as Node
 Conditions. It is designed to work in tandem with other controllers that
 observe Node Conditions such as [draino](https://github.com/planetlabs/draino)
-or the [cluster-api](https://cluster-api.sigs.k8s.io/tasks/healthcheck.html).
+or [Cluster API](https://cluster-api.sigs.k8s.io/tasks/automated-machine-management/healthchecking).
 
 # Requirements
 
-* Alertmanager API v2
+* Alertmanager API v2 or Prometheus API v1
 * Kubernetes 1.12+
 
 # Deployment
@@ -46,9 +46,9 @@ the supplied ConfigMap will set the environment variables on the Deployment.
 
 ### Alerts Fetch Configuration
 
-You must set the URL for the Alertmanager instance to sync from. In addition,
+You must set the URL for the Alertmanager or Prometheus instance(s) to sync from. In addition,
 filtering should be configured both on a global level and for each specific
-node.  The Alertmanager
+node. The Alertmanager
 [receiver](https://prometheus.io/docs/alerting/latest/configuration/#receiver)
 should be set to filter globally, while the node filters are set for matching
 alerts to a specific node.
@@ -57,15 +57,18 @@ alerts to a specific node.
 # AlertmanagerURL is the url for the Alertmanager instance to sync from
 SCIURO_ALERTMANAGER_URL: "https://CHANGEME.example.com"
 
+#PrometheusURLs is a list of Prometheus urls to sync from
+SCIURO_PROMETHEUS_URLS: "https://CHANGEME.example.com,https://CHANGEME2.example.com"
+
 # AlertReceiver is the receiver to use for server-side filtering of alerts
 # must be the same across all targeted nodes in the cluster
 SCIURO_ALERT_RECEIVER: "CHANGEME"
 
-# NodeFiltersTemplate is a golang template resulting in list of filters (comma separated)
-# to use for each node. These filters are logically OR'd
-# for associating alerts to a node. There are two valid variables available for substitution
-# FullName and ShortName where ShortName is FullName upto the first . (dot)
-SCIURO_NODE_FILTERS: "instance=~({{.FullName}}|{{.ShortName}})"
+# CEL_EXPRESSION is a Common Expression Language expression that runs against each alert.
+# `labels` is a map representing the prometheus labels of the alert.
+# There are two other valid variables available for substitution:
+# `FullName` and `ShortName` where `ShortName` is `FullName` up to the first . (dot)
+SCIURO_CEL_EXPRESSION: `labels["node"] == FullName || labels["node"] == ShortName`
 ```
 
 Some additional optional settings are as follows:
@@ -134,6 +137,26 @@ route:
 
 receivers:
   - name: node-condition-k8s
+```
+
+## Prometheus Configuration
+When using Prometheus as an input source,
+a more complex CEL expression is recommended since Prometheus
+does not have the concept of silences or receivers.
+A typical expression when using the Prometheus configuration may look like this:
+```
+labels["node"] == FullName && labels["notify"].contains("node-condition-k8s")
+```
+
+You may also want to drop the alerts with a particular receiver.
+Example Prometheus configuration:
+```
+      alertmanagers:
+        - alert_relabel_configs:
+            - action: drop
+              regex: node-condition-k8s
+              source_labels:
+                - notify
 ```
 
 # Creating alerts
