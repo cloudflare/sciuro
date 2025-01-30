@@ -148,7 +148,7 @@ func main() {
 		}
 
 		// Watch Nodes and enqueue object key
-		if err := c.Watch(source.Kind(mgr.GetCache(), &corev1.Node{}), &handler.EnqueueRequestForObject{}); err != nil {
+		if err := c.Watch(source.Kind(mgr.GetCache(), &corev1.Node{}, &handler.TypedEnqueueRequestForObject[*corev1.Node]{})); err != nil {
 			entryLog.Error(err, "unable to watch Nodes")
 			os.Exit(1)
 		}
