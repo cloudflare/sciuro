@@ -5,4 +5,4 @@ metadata:
 data:
   SCIURO_ALERT_RECEIVER: CHANGEME
   SCIURO_ALERTMANAGER_URL: https://CHANGEME.example.com
-  SCIURO_CEL_EXPRESSION: labels["instance"] == FullName || labels["instance"] == ShortName
+  SCIURO_CEL_EXPRESSION: '"node" in labels && (labels["node"] == FullName || labels["node"] == ShortName)'
