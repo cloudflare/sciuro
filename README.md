@@ -68,7 +68,7 @@ SCIURO_ALERT_RECEIVER: "CHANGEME"
 # `labels` is a map representing the prometheus labels of the alert.
 # There are two other valid variables available for substitution:
 # `FullName` and `ShortName` where `ShortName` is `FullName` up to the first . (dot)
-SCIURO_CEL_EXPRESSION: `labels["node"] == FullName || labels["node"] == ShortName`
+SCIURO_CEL_EXPRESSION: `"node" in labels && (labels["node"] == FullName || labels["node"] == ShortName)`
 ```
 
 Some additional optional settings are as follows:
