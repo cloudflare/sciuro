@@ -12,6 +12,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
+	"github.com/google/cel-go/common/types"
 	"github.com/prometheus/alertmanager/api/v2/client"
 	"github.com/prometheus/alertmanager/api/v2/client/alert"
 	"github.com/prometheus/alertmanager/api/v2/models"
@@ -153,13 +154,9 @@ func (s *syncer) Get(nodeName string) ([]promv1.Alert, time.Time, error) {
 			"ShortName": strings.Split(nodeName, ".")[0],
 		})
 		if err != nil {
-			return nil, s.retrievedAt, err
+			return nil, s.retrievedAt, fmt.Errorf("cel evaluation error: %w", err)
 		}
-		matched, ok := out.Value().(bool)
-		if !ok {
-			return nil, s.retrievedAt, fmt.Errorf("result of provided CLE expression was not a boolean")
-		}
-		if matched {
+		if out == types.True {
 			matchedAlerts = append(matchedAlerts, al)
 		}
 	}

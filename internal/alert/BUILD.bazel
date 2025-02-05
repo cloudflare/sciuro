@@ -9,6 +9,7 @@ go_library(
         "@com_github_go_logr_logr//:logr",
         "@com_github_google_cel_go//cel:go_default_library",
         "@com_github_google_cel_go//checker/decls:go_default_library",
+        "@com_github_google_cel_go//common/types:go_default_library",
         "@com_github_prometheus_alertmanager//api/v2/client",
         "@com_github_prometheus_alertmanager//api/v2/client/alert",
         "@com_github_prometheus_alertmanager//api/v2/models",
