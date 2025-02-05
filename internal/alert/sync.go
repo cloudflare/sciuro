@@ -134,11 +134,6 @@ func (s *syncer) Start(ctx context.Context) error {
 	return nil
 }
 
-type nodeInfo struct {
-	FullName  string
-	ShortName string
-}
-
 func (s *syncer) Get(nodeName string) ([]promv1.Alert, time.Time, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -150,17 +145,12 @@ func (s *syncer) Get(nodeName string) ([]promv1.Alert, time.Time, error) {
 		return nil, s.retrievedAt, s.lastErr
 	}
 
-	ni := &nodeInfo{
-		FullName:  nodeName,
-		ShortName: strings.Split(nodeName, ".")[0],
-	}
-
 	matchedAlerts := make([]promv1.Alert, 0, 1)
 	for _, al := range s.results {
 		out, _, err := s.program.Eval(map[string]any{
 			"labels":    al.Labels,
-			"FullName":  ni.FullName,
-			"ShortName": ni.ShortName,
+			"FullName":  nodeName,
+			"ShortName": strings.Split(nodeName, ".")[0],
 		})
 		if err != nil {
 			return nil, s.retrievedAt, err
