@@ -96,6 +96,9 @@ SCIURO_RECONCILE_TIMEOUT: "45s"
 # with the False status. After this time, the condition will be removed entirely.
 # A value of 0 will never remove these conditions.
 SCIURO_LINGER_DURATION: "96h"
+
+# NodeConditionPrefix is the prefix for type of node condition.
+SCIURO_NODE_CONDITION_PREFIX: "AlertManager_"
 ```
 
 ### Miscellaneous Configuration

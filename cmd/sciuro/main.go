@@ -57,6 +57,8 @@ type config struct {
 	// with the False status. After this time, the condition will be removed entirely.
 	// A value of 0 will never remove these conditions.
 	LingerResolvedDuration time.Duration `env:"SCIURO_LINGER_DURATION" envDefault:"96h"`
+	// NodeConditionPrefix is the prefix for type of node condition.
+	NodeConditionPrefix string `env:"SCIURO_NODE_CONDITION_PREFIX" envDefault:"AlertManager_"`
 }
 
 const name = "sciuro"
@@ -136,6 +138,7 @@ func main() {
 			cfg.ReconcileTimeout,
 			cfg.LingerResolvedDuration,
 			as,
+			cfg.NodeConditionPrefix,
 		)
 
 		c, err := controller.New("node-status-controller", mgr, controller.Options{

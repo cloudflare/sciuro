@@ -32,7 +32,10 @@ var (
 )
 
 func Test_Reconcile(t *testing.T) {
-	const resyncInterval = 2 * time.Minute
+	const (
+		resyncInterval  = 2 * time.Minute
+		conditionPrefix = "AlertManager_"
+	)
 	tests := []struct {
 		name        string
 		node        *corev1.Node
@@ -177,7 +180,7 @@ func Test_Reconcile(t *testing.T) {
 				Build()
 			ac := &mockAlertCache{}
 			tt.updateMocks(ac)
-			n := NewNodeStatusReconciler(c, logr.Discard(), prometheus.NewRegistry(), resyncInterval, time.Minute, time.Minute, ac)
+			n := NewNodeStatusReconciler(c, logr.Discard(), prometheus.NewRegistry(), resyncInterval, time.Minute, time.Minute, ac, conditionPrefix)
 			got, err := n.Reconcile(context.Background(), request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
@@ -815,6 +818,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 				tt.updateMock(mockClient)
 			}
 			linger := time.Hour * 24
+			conditionPrefix := "AlertManager_"
 
 			r := &nodeStatusReconciler{
 				c:                nil,
@@ -825,6 +829,7 @@ func Test_updateNodeStatuses(t *testing.T) {
 				updateStatusCounter: prometheus.NewCounterVec(prometheus.CounterOpts{
 					Name: "test",
 				}, []string{"old_status", "new_status"}),
+				conditionPrefix: conditionPrefix,
 			}
 			if err := r.updateNodeStatuses(logr.Discard(), tt.node); (err != nil) != tt.wantErr {
 				t.Errorf("updateNodeStatuses() error = %v, wantErr %v", err, tt.wantErr)
