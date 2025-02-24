@@ -1,5 +1,3 @@
-output:
-  format: tab
 run:
   timeout: 5m
   modules-download-mode: readonly
@@ -8,11 +6,11 @@ linters:
   enable:
     - bodyclose
     - contextcheck
+    - copyloopvar
     - decorder
     - dogsled
     - errcheck
     - errorlint
-    - exportloopref
     - gochecknoinits
     - goconst
     - gocritic
