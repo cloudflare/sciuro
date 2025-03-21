@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -19,7 +19,7 @@ jobs:
           git fetch --tags --force
       - uses: bazelbuild/setup-bazelisk@v1
       - name: Mount bazel cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: "~/.cache/bazel"
           key: bazel
