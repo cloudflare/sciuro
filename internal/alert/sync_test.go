@@ -8,54 +8,57 @@ import (
 
 	"github.com/go-logr/logr"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
 func Test_syncer_Get(t *testing.T) {
 
-	mClient := &mockAlertClient{}
+	partialResponses := []bool{false, true}
+	for _, partialResponse := range partialResponses {
 
-	s, err := NewSyncer(mClient, logr.Discard(), metrics.Registry, `labels["instance"] == FullName`, time.Minute)
-	assert.NoError(t, err)
+		mClient := &mockAlertClient{}
 
-	response1 := response1()
-	var alerts []promv1.Alert
-	var fetchTime, before, after time.Time
+		s, err := NewSyncer(mClient, logr.Discard(), prometheus.NewRegistry(), `labels["instance"] == FullName`, time.Minute)
+		assert.NoError(t, err)
 
-	_, _, err = s.Get("node1")
-	assert.EqualError(t, err, "cache is not yet ready")
-	mClient.AssertExpectations(t)
+		response1 := response1()
+		var alerts []promv1.Alert
+		var fetchTime, before, after time.Time
 
-	mClient.On("GetAlerts", mock.Anything).Return(response1, false, nil).Once()
-	before = time.Now()
-	s.SyncOnce()
-	after = time.Now()
-	alerts, fetchTime, err = s.Get("node1")
-	assert.Nil(t, err)
-	assert.EqualValues(t, response1, alerts)
-	assert.True(t, fetchTime.Before(after))
-	assert.True(t, fetchTime.After(before))
-	mClient.AssertExpectations(t)
+		_, _, err = s.Get("node1")
+		assert.EqualError(t, err, "cache is not yet ready")
+		mClient.AssertExpectations(t)
 
-	alerts, _, err = s.Get("node2")
-	assert.Nil(t, err)
-	assert.Empty(t, alerts)
-	mClient.AssertExpectations(t)
+		mClient.On("GetAlerts", mock.Anything).Return(response1, partialResponse, nil).Once()
+		before = time.Now()
+		s.SyncOnce()
+		after = time.Now()
+		alerts, fetchTime, err = s.Get("node1")
+		assert.Nil(t, err)
+		assert.EqualValues(t, response1, alerts)
+		assert.True(t, fetchTime.Before(after))
+		assert.True(t, fetchTime.After(before))
+		mClient.AssertExpectations(t)
 
-	mClient.On("GetAlerts", mock.Anything).Return(nil, false, errors.New("an error")).Once()
-	before = time.Now()
-	s.SyncOnce()
-	after = time.Now()
-	alerts, fetchTime, err = s.Get("node1")
-	assert.Nil(t, alerts)
-	assert.EqualError(t, err, "an error")
-	assert.True(t, fetchTime.Before(after))
-	assert.True(t, fetchTime.After(before))
-	mClient.AssertExpectations(t)
+		alerts, _, err = s.Get("node2")
+		assert.Nil(t, err)
+		assert.Empty(t, alerts)
+		mClient.AssertExpectations(t)
 
+		mClient.On("GetAlerts", mock.Anything).Return(nil, partialResponse, errors.New("an error")).Once()
+		before = time.Now()
+		s.SyncOnce()
+		after = time.Now()
+		alerts, fetchTime, err = s.Get("node1")
+		assert.Nil(t, alerts)
+		assert.EqualError(t, err, "an error")
+		assert.True(t, fetchTime.Before(after))
+		assert.True(t, fetchTime.After(before))
+		mClient.AssertExpectations(t)
+	}
 }
 
 func response1() []promv1.Alert {

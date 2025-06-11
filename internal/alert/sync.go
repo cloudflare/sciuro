@@ -176,16 +176,14 @@ func (s *syncer) SyncOnce() {
 	var partial bool
 	resp, partial, s.lastErr = s.alertClient.GetAlerts(ctx)
 	s.retrievedAt = time.Now()
-	// only store results on partial or full results
-	if partial || s.lastErr == nil {
+	if s.lastErr == nil {
 		s.results = resp
 		s.cacheNumAlerts.Set(float64(len(s.results)))
 	} else {
-		// clear the cache on non-partial failures
 		s.results = nil
 	}
 	// surface sync errors
-	if s.lastErr != nil {
+	if partial || s.lastErr != nil {
 		s.log.Error(s.lastErr, "could not retrieve all alerts")
 		s.alertsGetFailures.Inc()
 	}
@@ -269,16 +267,27 @@ func (p *PromMultiClient) GetAlerts(ctx context.Context) ([]promv1.Alert, bool, 
 	// Get alerts for each prometheus client
 	allAlerts := make([]promv1.Alert, 0)
 	var allErrs error
-	partial := false
+	failures := 0
 
 	for _, client := range p.clients {
 		alerts, _, err := client.GetAlerts(ctx)
 		if err != nil {
 			allErrs = errors.Join(allErrs, err)
-			partial = true
+			failures++
 		} else {
 			allAlerts = append(allAlerts, alerts...)
 		}
+	}
+
+	// a partial result is when some, but not all
+	// of the clients returned errors
+	partial := failures > 0 && failures != len(p.clients)
+
+	// do not return errors on partial failures
+	// metrics will surface the issue
+	// and conditions will still reconcile
+	if partial {
+		return allAlerts, partial, nil
 	}
 	return allAlerts, partial, allErrs
 }
