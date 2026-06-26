@@ -1,25 +1,19 @@
-load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
-load("@k8s_deploy//:defaults.bzl", "k8s_deploy")
+package(default_visibility = ["//manifests:__subpackages__"])
 
-package(default_visibility = ["//manifests:__pkg__"])
-
-k8s_deploy(
-    name = "sciuro-namespace",
-    kind = "namespace",
-    template = ":namespace.yaml",
+# Bind the ServiceAccount subject to the configured namespace, e.g.
+#   --define namespace=node-remediation
+genrule(
+    name = "clusterrolebinding",
+    srcs = ["clusterrolebinding.yaml"],
+    outs = ["clusterrolebinding.rendered.yaml"],
+    cmd = "sed -e 's|^\\( *namespace: \\)kube-system$$|\\1$(namespace)|' $< > $@",
 )
 
-k8s_deploy(
-    name = "sciuro-clusterrole",
-    kind = "clusterrole",
-    template = ":clusterrole.yaml",
-)
-
-k8s_deploy(
-    name = "sciuro-clusterrolebinding",
-    kind = "clusterrolebinding",
-    substitutions = {
-        "kube-system": "$(namespace)",
-    },
-    template = ":clusterrolebinding.yaml",
+filegroup(
+    name = "objects",
+    srcs = [
+        "clusterrole.yaml",
+        "namespace.yaml",
+        ":clusterrolebinding.rendered.yaml",
+    ],
 )

@@ -1,0 +1,32 @@
+module(
+    name = "sciuro",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "rules_go", version = "0.61.1")
+bazel_dep(name = "gazelle", version = "0.51.3")
+bazel_dep(name = "rules_oci", version = "2.3.0")
+bazel_dep(name = "rules_pkg", version = "1.2.0")
+bazel_dep(name = "aspect_bazel_lib", version = "2.22.5")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.24.13")
+
+include("//:go_deps.MODULE.bazel")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+
+# Multi-arch distroless static base, suitable for a CGO-free static Go binary.
+# gcr.io/distroless/static-debian12:latest
+oci.pull(
+    name = "distroless_static",
+    digest = "sha256:9c346e4be81b5ca7ff31a0d89eaeade58b0f95cfd3baed1f36083ddb47ca3160",
+    image = "gcr.io/distroless/static-debian12",
+    platforms = [
+        "linux/amd64",
+        "linux/arm64/v8",
+    ],
+)
+use_repo(oci, "distroless_static", "distroless_static_linux_amd64", "distroless_static_linux_arm64_v8")

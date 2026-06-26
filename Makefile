@@ -29,7 +29,7 @@ dep-fix:
 dep-update: go.sum
 	@echo updating dependencies
 	@go mod tidy
-	@./tools/bazel run //:gazelle -- update-repos -from_file=go.mod -prune=true -to_macro=gazelle.bzl%deps
+	@./tools/bazel mod tidy
 
 .PHONY: test
 test:

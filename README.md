@@ -195,9 +195,13 @@ Sciuro is built and tested with [bazel](https://bazel.build/). To run tests:
 make test
 ```
 
-To build and push images, define the docker repository base with the run of the
-manifests targets:
+To build and push the multi-arch image index, set the repository at runtime:
 ```
-bazel run --define repo=quay.io/myrepo  //manifests:cluster > /tmp/cluster.yaml
-bazel run --define repo=quay.io/myrepo  //manifests:stable > /tmp/stable.yaml
+bazel run //cmd/sciuro:push -- --repository=quay.io/myrepo/sciuro --tag=v1.2.3
+```
+
+To render the manifests, define the docker repository base and namespace:
+```
+bazel build //manifests:cluster //manifests:stable \
+  --define repo=quay.io/myrepo --define namespace=node-remediation
 ```

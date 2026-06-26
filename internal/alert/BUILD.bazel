@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "alert",
@@ -31,9 +31,9 @@ go_test(
     deps = [
         "@com_github_go_logr_logr//:logr",
         "@com_github_prometheus_client_golang//api/prometheus/v1:prometheus",
+        "@com_github_prometheus_client_golang//prometheus",
         "@com_github_prometheus_common//model",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
-        "@io_k8s_sigs_controller_runtime//pkg/metrics",
     ],
 )

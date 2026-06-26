@@ -1,43 +1,30 @@
-load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
-load("@k8s_deploy//:defaults.bzl", "k8s_deploy")
+package(default_visibility = ["//manifests:__subpackages__"])
 
-package(default_visibility = ["//manifests:__pkg__"])
-
-k8s_deploy(
-    name = "sciuro-configmap",
-    kind = "configmap",
-    template = ":configmap.yaml",
+# Pin the image by the digest of the built multi-arch index so the rendered
+# deployment is immutable. The registry prefix comes from --define repo=...
+genrule(
+    name = "deployment",
+    srcs = [
+        "deployment.yaml",
+        "//cmd/sciuro:image_index",
+    ],
+    outs = ["deployment.rendered.yaml"],
+    cmd = """\
+set -eu
+digest=$$(grep -oE -m1 'sha256:[a-f0-9]{64}' "$(location //cmd/sciuro:image_index)/index.json" || true)
+if [ -z "$$digest" ]; then echo "deployment: no sha256 digest found in index.json" >&2; exit 1; fi
+sed -e "s|docker\\.io/cloudflare/sciuro:latest|$(repo)/sciuro@$$digest|g" "$(location deployment.yaml)" > "$@"
+""",
 )
 
-k8s_deploy(
-    name = "sciuro-deployment",
-    images = {
-        "sciuro:{STABLE_GIT_TAG}": "//cmd/sciuro:image",
-    },
-    kind = "deployment",
-    template = ":deployment.yaml",
-)
-
-k8s_deploy(
-    name = "sciuro-serviceaccount",
-    kind = "serviceaccount",
-    template = ":serviceaccount.yaml",
-)
-
-k8s_deploy(
-    name = "sciuro-role",
-    kind = "role",
-    template = ":role.yaml",
-)
-
-k8s_deploy(
-    name = "sciuro-rolebinding",
-    kind = "rolebinding",
-    template = ":rolebinding.yaml",
-)
-
-k8s_deploy(
-    name = "sciuro-leader",
-    kind = "configmap",
-    template = ":sciuro-leader.yaml",
+filegroup(
+    name = "objects",
+    srcs = [
+        "configmap.yaml",
+        "role.yaml",
+        "rolebinding.yaml",
+        "sciuro-leader.yaml",
+        "serviceaccount.yaml",
+        ":deployment.rendered.yaml",
+    ],
 )

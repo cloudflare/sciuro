@@ -18,7 +18,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: sciuro
-          image: sciuro:{STABLE_GIT_TAG}
+          image: docker.io/cloudflare/sciuro:latest
           imagePullPolicy: IfNotPresent
           resources:
             limits:

@@ -1,35 +1,6 @@
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-
-go_library(
-    name = "sciuro",
-    srcs = ["main.go"],
-    importpath = "github.com/cloudflare/sciuro/cmd/sciuro",
-    visibility = ["//visibility:private"],
-    deps = [
-        "//internal/alert",
-        "//internal/node",
-        "@com_github_caarlos0_env_v9//:env",
-        "@com_github_prometheus_alertmanager//cli",
-        "@io_k8s_api//core/v1:core",
-        "@io_k8s_sigs_controller_runtime//pkg/client/config",
-        "@io_k8s_sigs_controller_runtime//pkg/controller",
-        "@io_k8s_sigs_controller_runtime//pkg/handler",
-        "@io_k8s_sigs_controller_runtime//pkg/log",
-        "@io_k8s_sigs_controller_runtime//pkg/log/zap",
-        "@io_k8s_sigs_controller_runtime//pkg/manager",
-        "@io_k8s_sigs_controller_runtime//pkg/manager/signals",
-        "@io_k8s_sigs_controller_runtime//pkg/metrics",
-        "@io_k8s_sigs_controller_runtime//pkg/source",
-    ],
-)
-
-go_image(
-    name = "image",
-    embed = [":sciuro"],
-    pure = "on",
-    visibility = ["//visibility:public"],
-)
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load", "oci_push")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
 go_library(
     name = "sciuro_lib",
@@ -51,4 +22,82 @@ go_library(
         "@io_k8s_sigs_controller_runtime//pkg/metrics",
         "@io_k8s_sigs_controller_runtime//pkg/source",
     ],
+)
+
+# One static, cross-compiled binary per target architecture.
+go_binary(
+    name = "sciuro_linux_amd64",
+    embed = [":sciuro_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    pure = "on",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "sciuro_linux_arm64",
+    embed = [":sciuro_lib"],
+    goarch = "arm64",
+    goos = "linux",
+    pure = "on",
+    visibility = ["//visibility:private"],
+)
+
+# Package each binary as a layer with a stable path of /sciuro.
+pkg_tar(
+    name = "app_layer_amd64",
+    srcs = [":sciuro_linux_amd64"],
+    remap_paths = {"/sciuro_linux_amd64": "/sciuro"},
+)
+
+pkg_tar(
+    name = "app_layer_arm64",
+    srcs = [":sciuro_linux_arm64"],
+    remap_paths = {"/sciuro_linux_arm64": "/sciuro"},
+)
+
+# One image per architecture. The architecture of each image is taken from its
+# base, so the matching binary must be paired with the matching base.
+oci_image(
+    name = "image_amd64",
+    base = "@distroless_static_linux_amd64",
+    entrypoint = ["/sciuro"],
+    tars = [":app_layer_amd64"],
+    visibility = ["//visibility:public"],
+)
+
+oci_image(
+    name = "image_arm64",
+    base = "@distroless_static_linux_arm64_v8",
+    entrypoint = ["/sciuro"],
+    tars = [":app_layer_arm64"],
+    visibility = ["//visibility:public"],
+)
+
+# Multi-architecture image: a single reference that works on amd64 and arm64.
+oci_image_index(
+    name = "image_index",
+    images = [
+        ":image_amd64",
+        ":image_arm64",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Load the amd64 image into a local Docker/Podman daemon:
+#   bazel run //cmd/sciuro:image_load
+oci_load(
+    name = "image_load",
+    image = ":image_amd64",
+    repo_tags = ["sciuro:latest"],
+    visibility = ["//visibility:public"],
+)
+
+# Push the multi-arch index. The repository must be supplied at runtime:
+#   bazel run //cmd/sciuro:push -- --repository=docker.io/cloudflare/sciuro --tag=v1.2.3
+# Without --tag the index is pushed by digest only.
+oci_push(
+    name = "push",
+    image = ":image_index",
+    visibility = ["//visibility:public"],
 )

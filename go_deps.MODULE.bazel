@@ -1,0 +1,18 @@
+# This file is maintained by `bazel mod tidy`. Do not edit the use_repo call by hand.
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//:go.mod")
+use_repo(
+    go_deps,
+    "com_github_caarlos0_env_v9",
+    "com_github_go_logr_logr",
+    "com_github_google_cel_go",
+    "com_github_google_go_cmp",
+    "com_github_prometheus_alertmanager",
+    "com_github_prometheus_client_golang",
+    "com_github_prometheus_common",
+    "com_github_stretchr_testify",
+    "io_k8s_api",
+    "io_k8s_apimachinery",
+    "io_k8s_sigs_controller_runtime",
+    "tools_gotest_v3",
+)
