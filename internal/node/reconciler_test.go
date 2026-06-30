@@ -191,7 +191,7 @@ func Test_Reconcile(t *testing.T) {
 			}
 			mock.AssertExpectationsForObjects(t, ac)
 			actual := &corev1.Node{}
-			assert.NilError(t, c.Get(context.TODO(), types.NamespacedName{Name: tt.expected.ObjectMeta.Name}, actual))
+			assert.NilError(t, c.Get(context.TODO(), types.NamespacedName{Name: tt.expected.Name}, actual))
 			assert.DeepEqual(t, tt.expected, actual,
 				cmpopts.IgnoreFields(v1.ObjectMeta{}, "ResourceVersion"),
 				cmpopts.IgnoreTypes(v1.TypeMeta{}))

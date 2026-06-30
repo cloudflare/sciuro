@@ -1,58 +1,17 @@
+version: "2"
+
 run:
   timeout: 5m
-  modules-download-mode: readonly
 
 linters:
-  enable:
-    - bodyclose
-    - contextcheck
-    - copyloopvar
-    - decorder
-    - dogsled
-    - errcheck
-    - errorlint
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - godox
-    - goimports
-    - goprintffuncname
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
-    - nakedret
-    - prealloc
-    - revive
-    - staticcheck
-    - stylecheck
-    - typecheck
-    - unconvert
-    - unparam
-    - unused
-linters-settings:
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - commentFormatting
-      - exitAfterDefer
-      - hugeParam
-      - ifElseChain
-      - rangeValCopy
-      - unnecessaryBlock
-  gofmt:
-    simplify: true
-  misspell:
-    locale: US
-    ignore-words:
-      - clas
-  godox:
-    keywords:
-      - HACK
-      - XXX
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+
+formatters:
+  exclusions:
+    generated: lax
