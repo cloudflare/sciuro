@@ -3,7 +3,7 @@ genrule(
     name = "stable",
     srcs = ["//manifests/namespaced:objects"],
     outs = ["stable.yaml"],
-    cmd = "for f in $$(printf '%s\\n' $(locations //manifests/namespaced:objects) | sort); do echo '---'; cat $$f; done > $@",
+    cmd = "for f in $$(printf '%s\\n' $(locations //manifests/namespaced:objects) | sort); do echo '---'; cat $$f; [ -z \"$$(tail -c1 $$f)\" ] || echo; done > $@",
     visibility = ["//visibility:public"],
 )
 
@@ -11,6 +11,6 @@ genrule(
     name = "cluster",
     srcs = ["//manifests/non-namespaced:objects"],
     outs = ["cluster.yaml"],
-    cmd = "for f in $$(printf '%s\\n' $(locations //manifests/non-namespaced:objects) | sort); do echo '---'; cat $$f; done > $@",
+    cmd = "for f in $$(printf '%s\\n' $(locations //manifests/non-namespaced:objects) | sort); do echo '---'; cat $$f; [ -z \"$$(tail -c1 $$f)\" ] || echo; done > $@",
     visibility = ["//visibility:public"],
 )
