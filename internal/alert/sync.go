@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/checker/decls"
 	"github.com/google/cel-go/common/types"
 	"github.com/prometheus/alertmanager/api/v2/client"
 	"github.com/prometheus/alertmanager/api/v2/client/alert"
@@ -67,11 +66,9 @@ func NewSyncer(
 	syncInterval time.Duration,
 ) (Syncer, error) {
 	env, err := cel.NewEnv(
-		cel.Declarations(
-			decls.NewVar("labels", decls.NewMapType(decls.String, decls.String)),
-			decls.NewVar("FullName", decls.String),
-			decls.NewVar("ShortName", decls.String),
-		),
+		cel.Variable("labels", cel.MapType(cel.StringType, cel.StringType)),
+		cel.Variable("FullName", cel.StringType),
+		cel.Variable("ShortName", cel.StringType),
 	)
 	if err != nil {
 		return nil, err
